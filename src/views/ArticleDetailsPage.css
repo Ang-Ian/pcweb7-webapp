@@ -1,0 +1,45 @@
+.navbar {
+    border-bottom: 1px solid #ddd;
+    display:flex;
+    align-items: center
+}
+
+.navbar-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.logo {
+    height: 40px;
+    border: 1px solid black;
+}
+
+.main-content {
+    padding: 20px;
+    text-align: center;
+}
+
+.profile-pic {
+    border: 2px solid #ddd; /* Optional border for better visibility */
+    cursor: pointer;
+    border-radius: 50%; /* Makes the image a circle */
+    object-fit: cover; /* Ensures the image covers the circle without distortion */
+}
+
+.profile-pic-dropdown .dropdown-toggle::after {
+    display: none; /* Hide the default dropdown arrow */
+}
+
+.profile-pic {
+    border: 2px solid #ddd; /* Optional border */
+    cursor: pointer;
+}
+
+.profile-dropdown-menu {
+    position: absolute !important; /* Ensure dropdown is positioned absolutely */
+    top: 100%; /* Position below the toggle */
+    right: 0; /* Align to the right edge of the toggle */
+    margin-top: 0.5rem; /* Adjust space between toggle and menu */
+    z-index: 9999; /* Ensure dropdown appears above other elements */
+}

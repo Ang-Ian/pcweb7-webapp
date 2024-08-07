@@ -1,22 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Navbar, Nav, Container, Button, Form, Image, Dropdown } from 'react-bootstrap';
+import { Navbar, Nav, Container, Button, Form, Row, Card, Col, Image, Dropdown } from 'react-bootstrap';
 import { signOut, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db, storage } from "../firebase";
-import { doc, addDoc, collection, setDoc, getDoc } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { useNavigate } from 'react-router-dom';
+import { doc, addDoc, collection, setDoc, getDoc, deleteDoc } from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytes, deleteObject } from "firebase/storage";
+import { useNavigate, useParams } from 'react-router-dom';
 import './HomePage.css';
 
-const AddArticle = () => {
+const ArticleDetails = () => {
     const [user, loading] = useAuthState(auth);
     const [error, setError] = useState("");
     const [title, setTitle] = useState("");
     const [username, setUsername] = useState("");
     const [image, setImage] = useState("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png")
+    const [author, setAuthor] = useState("");
+    const [authorpfp, setAuthorPfP] = useState("");
+    const [authorid, setAuthorID] = useState("");
     const [thumbnail, setThumbnail] = useState(null);
     const [body, setBody] = useState("");
     const [imageUrl, setImageUrl] = useState("");
+    const params = useParams();
+    const id = params.id;
     const navigate = useNavigate();
 
     async function setProfileIcons() {
@@ -32,16 +37,33 @@ const AddArticle = () => {
         }
     }
 
-    async function addArticleDetails(id) {
-        const thumbnailReference = ref(storage, `thumbnails/${thumbnail.name}`);
-        const response = await uploadBytes(thumbnailReference, thumbnail);
-        const thumbnailUrl = await getDownloadURL(response.ref);
-        await addDoc(collection(db, "articles"), {
-            title,
-            body,
-            thumbnail: thumbnailUrl,
-            uid: user.uid
+    async function deletePost(id) {
+        const articleDocument = await getDoc(doc(db, "article", id));
+        const article = articleDocument.data();
+        const desertRef = ref(storage, `thumbnails/${article.imageName}`);
+        deleteObject(desertRef).then(() => {
+            console.log("deleted from firebase storage")
+        }).catch((error) => {
+            console.log("OH NO")
+            console.error(error.message)
         });
+
+        await deleteDoc(doc(db, "articles", id));
+        navigate("/");
+    }
+
+    async function getArticle(id) {
+        const articleDocument = await getDoc(doc(db, "articles", id));
+        const article = articleDocument.data();
+        setTitle(article.title);
+        setThumbnail(article.thumbnail);
+        setBody(article.body);
+        const userid = article.uid;
+        setAuthorID(userid);
+        const authorDocument = await getDoc(doc(db, "users", userid));
+        const author = authorDocument.data();
+        setAuthor(author.username);
+        setAuthorPfP(author.image);
     }
 
     useEffect(() => {
@@ -53,7 +75,8 @@ const AddArticle = () => {
             .catch((error) => {
                 console.error("Error setting persistence:", error);
             });
-    }, []);
+            getArticle(id)
+    }, [id]);
 
     useEffect(() => {
         if (loading) return;
@@ -130,55 +153,45 @@ const AddArticle = () => {
                 </Container>
             </Navbar>
             <Container className="main-content">
-                <h1>Add New Article</h1>
-                <Form>
-                    <Form.Group className="mb-3" controlId="formArticleTitle">
-                        <Form.Label>Title</Form.Label>
-                        <Form.Control
-                            type="text"
-                            placeholder="Enter title"
-                            value={title}
-                            onChange={(e) => {setTitle(e.target.value)}}
-                        />
-                    </Form.Group>
-                    <Form.Group className="mb-3" controlId="formThumbnail">
-                        <Form.Label>Thumbnail</Form.Label>
-                        <Form.Control
-                            type="file"
-                            onChange={(e) => {setThumbnail(e.target.files[0])}}
-                        />
-                        {imageUrl && (
-                            <Image src={imageUrl} thumbnail style={{ marginTop: '10px', maxWidth: '200px' }} />
-                        )}
-                    </Form.Group>
-                    <Form.Group className="mb-3" controlId="formArticleBody">
-                        <Form.Label>Body</Form.Label>
-                        <Form.Control
-                            as="textarea"
-                            rows={5}
-                            placeholder="Enter body text"
-                            value={body}
-                            onChange={(e) => {setBody(e.target.value)}}
-                        />
-                    </Form.Group>
-                    <Button variant="primary" type="submit" onClick={(e) => {
-                        setError("");
-                        const canSubmit = title && thumbnail && body;
-                        if (canSubmit) {
-                            try {
-                                addArticleDetails(user.uid);
-                                navigate("/");
-                            } catch (error) {
-                                setError(error.message);
-                                }
-                        }
-                    }}>
-                        Submit
-                    </Button>
-                </Form>
+            <Row style={{ marginTop: "2rem" }}>
+            {/* <Row> */}
+                <Image src={thumbnail} className="mx-auto" style={{width: '100%'}}/>
+            {/* </Row> */}
+            {/* <Col> */}
+                <p style={{fontSize:"25px",textAlign:"left"}}>
+                Written by: <Image
+                src={authorpfp}
+                roundedCircle
+                className="profile-pic" 
+                style={{ width: '50px', height: '50px' }}
+                            /> {author}
+                </p>
+                {(user.uid === authorid) &&
+                    <Button
+                variant="outline-primary" 
+                className="edit-button"
+                onClick={() => navigate(`/edit-article/${id}`)}
+                >Edit
+                </Button>
+                }
+                <Card style={{width: '100%',marginTop:"10px"}}>
+                <Card.Body >
+                    <Card.Text style={{fontSize:"30px",fontWeight:"bold",textAlign:"left"}}>{title}</Card.Text>
+                    <Card.Text style={{textAlign: "left"}}>{body}</Card.Text>
+                    {/* <Card.Link href={`/update/${id}`}>Edit</Card.Link>
+                    <Card.Link
+                    onClick={() => deletePost(id)}
+                    style={{ cursor: "pointer" }}
+                    >
+                    Delete
+                    </Card.Link> */}
+                </Card.Body>
+                </Card>
+            {/* </Col> */}
+            </Row>
             </Container>
         </div>
     );
 };
 
-export default AddArticle;
+export default ArticleDetails;

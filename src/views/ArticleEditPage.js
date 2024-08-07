@@ -1,3 +1,5 @@
+// copied from AddArticlePage.js
+
 import React, { useState, useEffect } from 'react';
 import { Navbar, Nav, Container, Button, Form, Image, Dropdown } from 'react-bootstrap';
 import { signOut, setPersistence, browserLocalPersistence } from 'firebase/auth';
@@ -8,7 +10,7 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { useNavigate } from 'react-router-dom';
 import './HomePage.css';
 
-const AddArticle = () => {
+const EditArticle = () => {
     const [user, loading] = useAuthState(auth);
     const [error, setError] = useState("");
     const [title, setTitle] = useState("");
@@ -181,4 +183,4 @@ const AddArticle = () => {
     );
 };
 
-export default AddArticle;
+export default EditArticle;

@@ -12,7 +12,6 @@ export default function SignUpPage() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [image, setImage] = useState("");
-    const [previewImage, setPreviewImage] = useState("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png");
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
@@ -66,9 +65,7 @@ export default function SignUpPage() {
               type="file"
               onChange={(e) => {
                 const imageFile = e.target.files[0];
-                const previewImage = URL.createObjectURL(imageFile);
                 setImage(imageFile);
-                setPreviewImage(previewImage);
               }}
             />
             <Form.Text className="text-muted">

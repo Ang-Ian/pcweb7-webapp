@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Navbar, Nav, Container, Button, Image, Dropdown } from 'react-bootstrap';
+import { Navbar, Nav, Container, Button, Card, Image, Dropdown, Row } from 'react-bootstrap';
 import { signOut, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth, db, storage } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
+import { doc, getDoc, getDocs, collection } from "firebase/firestore";
 import './HomePage.css';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const HomePage = () => {
     const [user, loading] = useAuthState(auth);
     const [image, setImage] = useState("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png");
     const [username, setUsername] = useState("User");
+    const [articles, setArticles] = useState([]);
     const navigate = useNavigate();
     
     async function setProfileIcons() {
@@ -26,6 +27,20 @@ const HomePage = () => {
         }
     }
 
+    async function getAllArticles() {
+        const query = await getDocs(collection(db, "articles"));
+        console.log("HALLOO", query.docs[0].data());
+        const articles = query.docs.map((doc) => {
+          return { id: doc.id, ...doc.data() };
+        });
+        console.log("boomz", articles);
+        setArticles(articles);
+    }
+
+    const ArticleRow = () => {
+    return articles.map((article, index) => <ArticleCard key={index} article={article} />);
+    };
+    
     useEffect(() => {
         setPersistence(auth, browserLocalPersistence)
             .then(() => {
@@ -35,6 +50,7 @@ const HomePage = () => {
             .catch((error) => {
                 console.error("Error setting persistence:", error);
             });
+        getAllArticles()
     }, []);
 
     useEffect(() => {
@@ -110,13 +126,61 @@ const HomePage = () => {
                     </Nav>
                 </Container>
             </Navbar>
-            {/* Add your main content here */}
             <Container className="main-content">
                 <h1>Home Page</h1>
-                {/* Additional content goes here */}
+                <Row style={{alignItems: "center"}}>
+                    <ArticleRow />
+                </Row>
             </Container>
         </div>
     );
 };
 
 export default HomePage;
+
+
+function ArticleCard({ article }) {
+    const [authorusername, setAuthorUsername] = useState("");
+    const [authorpfp, setauthorPfP] = useState(null);
+
+    const { thumbnail, id } = article;
+    // console.log("pdff", article.thumbnail, "blehg", article.uid)
+    console.log("poodlies", article)
+    const userid = article.uid;
+    async function getAuthorProfile() {
+        const authorDocument = await getDoc(doc(db, "users", userid));
+        const author = authorDocument.data();
+        setAuthorUsername(author.username);
+        setauthorPfP(author.image);
+
+    };
+    getAuthorProfile();
+    return (
+      <Link
+        to={`article/${id}`}
+        style={{
+          width: "18rem",
+          marginLeft: "1rem",
+          marginTop: "2rem",
+          textDecoration: "None"
+        }}
+      >
+        <Card style={{ width: '18rem' }}>
+        <Card.Img variant="top" src={thumbnail} key={id} height="200px" />
+        <Card.Body>
+          <Card.Title style={{fontSize:"25px", textAlign:"left"}}>{article.title}</Card.Title>
+          <Card.Text>
+          <p style={{fontSize:"15px",textAlign:"left"}}>
+                Written by: <Image
+                src={authorpfp}
+                roundedCircle
+                className="profile-pic" 
+                style={{ width: '40px', height: '40px' }}
+                            /> {authorusername}
+                </p>
+          </Card.Text>
+        </Card.Body>
+        </Card>
+      </Link>
+    );
+  }
