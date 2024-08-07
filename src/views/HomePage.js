@@ -1,36 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { Navbar, Nav, Container, Button, Image, Dropdown } from 'react-bootstrap';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db, storage } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import './HomePage.css';
+import { useNavigate } from 'react-router-dom';
 
 const HomePage = () => {
-    const [user, setUser] = useState(null);
+    const [user, loading] = useAuthState(auth);
     const [image, setImage] = useState("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png")
     const [username, setUsername] = useState("User");
-    console.log(user);
+    const navigate = useNavigate();
     
-    async function setProfile(id) {
-        const userDocument = await getDoc(doc(db, "users", id));
-        const userInfo = userDocument.data();
-        console.log(userInfo);
-        setImage(userInfo.image);
-        setUsername(userInfo.username);
+    async function setProfileIcons() {
+        console.log(user);
+        // const postDocument = await getDoc(doc(db, "users", "tmSGh0QBSiPnFftDRR1Mt5QdfF13"));
+        if (user) {
+            const postDocument = await getDoc(doc(db, "users", user.uid));
+            const userInfo = postDocument.data();
+            console.log(userInfo);
+            setImage(userInfo.image);
+            setUsername(userInfo.username);
+        }
     }
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            try {
-                setUser(currentUser.uid);
-                setProfile(user);
-            }
-            catch (error) {
-                console.log(error.message);
-            }
-        });
-        return () => unsubscribe();
-    }, [user]);
+        if (loading) return;
+        // if (!user) navigate("/login");
+        setProfileIcons();
+      }, [user, loading, navigate]);
+    
 
     const handleLogout = async () => {
         try {
@@ -76,7 +76,7 @@ const HomePage = () => {
                                 </Dropdown.Toggle>
 
                                 <Dropdown.Menu className="profile-dropdown-menu">
-                                    <Dropdown.Item onClick={handleLogout}>Log Out</Dropdown.Item>
+                                    <Dropdown.Item onClick={handleLogout()}>Log Out</Dropdown.Item>
                                 </Dropdown.Menu>
                             </Dropdown>
                         ) : (

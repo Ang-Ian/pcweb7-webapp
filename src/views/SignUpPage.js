@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Button, Container, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { addDoc, collection } from "firebase/firestore";
+import { setDoc, doc, addDoc, collection } from "firebase/firestore";
 import { auth, db, storage } from "../firebase";
 import "./SignUpPage.css"
 
@@ -22,7 +22,15 @@ export default function SignUpPage() {
         const response = await uploadBytes(imageReference, image);
         // console.log("response:", response);
         const imageUrl = await getDownloadURL(response.ref);
-        await addDoc(collection(db, "users"), {id, username, image: imageUrl});
+        // await addDoc(collection(db, "users"), {id, username, image: imageUrl});
+        // await db.collection('users').doc(id).set({
+        //     username,
+        //     image: imageUrl
+        // })
+        await setDoc(doc(db, "users", id), {
+            username,
+            image: imageUrl
+          });
     }
 
   return (
