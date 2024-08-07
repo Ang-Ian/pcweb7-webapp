@@ -43,9 +43,12 @@ export default function LoginPage() {
           if (canLogin) {
             try {
               await signInWithEmailAndPassword(auth, email, password);
+              console.log("BALLZ");
+              console.log(auth);
               navigate("/");
             } catch (error) {
               setError(error.message);
+              console.log(error);
             }
           }
         }}>

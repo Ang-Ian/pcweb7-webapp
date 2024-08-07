@@ -4,6 +4,7 @@ import './App.css';
 import SignUpPage from "./views/SignUpPage";
 import HomePage from "./views/HomePage";
 import LogInPage from "./views/LogInPage";
+import AddArticlePage from "./views/AddArticlePage.js"
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LogInPage />} />
+        <Route path="/add-article" element={<AddArticlePage />} />
       </Routes>
     </Router>
   );
