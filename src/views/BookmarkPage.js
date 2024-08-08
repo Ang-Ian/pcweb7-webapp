@@ -3,15 +3,17 @@ import { Navbar, Nav, Container, Button, Card, Image, Dropdown, Row } from 'reac
 import { signOut, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "../firebase";
-import { doc, getDoc, getDocs, collection, addDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection, addDoc, } from "firebase/firestore";
 import './HomePage.css';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
-const HomePage = () => {
+const BookmarkPage = () => {
     const [user, loading] = useAuthState(auth);
     const [image, setImage] = useState("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png");
     const [username, setUsername] = useState("User");
     const [articles, setArticles] = useState([]);
+    const params = useParams();
+    const userid = params.id;
     const navigate = useNavigate();
     
     async function setProfileIcons() {
@@ -27,35 +29,32 @@ const HomePage = () => {
         }
     }
 
-    async function getAllArticles() {
-        const query = await getDocs(collection(db, "articles"));
-        const articles = query.docs.map((doc) => {
+    async function getBookmarkedArticles() {
+        const query = await getDocs(collection(db, "bookmarks"));
+        const bookmarks = query.docs.map((doc) => {
           return { id: doc.id, ...doc.data() };
         });
-        console.log("boomz", articles);
-        setArticles(articles);
+        console.log("userid: ", userid);
+        const bookmarkedArticles = bookmarks.filter((doc) => (userid === doc.userid));
+        console.log("soihoasihn", bookmarkedArticles);
+        setArticles(bookmarkedArticles);
     }
-
+    
     const ArticleRow = () => {
-    return articles.map((article, index) => <ArticleCard key={index} article={article} />);
+        console.log("articles: ", articles);
+        // return articles.map((article, index) => <ArticleCard key={index} article={article} />);
+        if (articles.length === 0) { return }
+        return articles.map((article, index) => {
+            console.log('more code here....')
+        return <ArticleCard key={index} article={article} />
+        });
     };
     
-    useEffect(() => {
-        setPersistence(auth, browserLocalPersistence)
-            .then(() => {
-                // Existing and future Auth states will persist until explicitly signed out
-                return auth.currentUser;
-            })
-            .catch((error) => {
-                console.error("Error setting persistence:", error);
-            });
-        getAllArticles()
-    }, []);
-
     useEffect(() => {
         if (loading) return;
         if (!user) navigate("/login");
         setProfileIcons();
+        getBookmarkedArticles();
     }, [user, loading, navigate]);
     
     async function handleLogout() {
@@ -131,7 +130,7 @@ const HomePage = () => {
                 </Container>
             </Navbar>
             <Container className="main-content">
-                <h1>Home Page</h1>
+                <h1>Bookmarks</h1>
                 <Row style={{alignItems: "center"}}>
                     <ArticleRow />
                 </Row>
@@ -140,7 +139,7 @@ const HomePage = () => {
     );
 };
 
-export default HomePage;
+export default BookmarkPage;
 
 
 function ArticleCard({ article }) {
@@ -154,6 +153,7 @@ function ArticleCard({ article }) {
     console.log("poodlies", article)
     const userid = article.uid;
     async function getAuthorProfile() {
+        console.log("hello: ",userid)
         const authorDocument = await getDoc(doc(db, "users", userid));
         const author = authorDocument.data();
         setAuthorUsername(author.username);
@@ -161,14 +161,9 @@ function ArticleCard({ article }) {
     };
     getAuthorProfile();
 
-    async function addToBookmarks(articleId) {
-        const userid = user.uid;
-        await addDoc(collection(db, "bookmarks"), { articleid: articleId, userid: userid})
-    }
-
     return (
       <Link
-        to={`article/${id}`}
+        onClick={() => navigate(`article/${id}`)}
         style={{
           width: "18rem",
           marginLeft: "1rem",
@@ -181,7 +176,8 @@ function ArticleCard({ article }) {
         <Card.Body>
           <Card.Title style={{fontSize:"25px", textAlign:"left"}}>{article.title}</Card.Title>
           <Card.Text>
-          <p style={{fontSize:"15px",textAlign:"left"}}>
+            <p>{article.articleid}</p>
+          {/* <p style={{fontSize:"15px",textAlign:"left"}}>
                 Written by: 
                 <Link
                     to={`user/${article.uid}`}
@@ -200,7 +196,7 @@ function ArticleCard({ article }) {
                 <path d="M2 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v11.5a.5.5 0 0 1-.777.416L7 13.101l-4.223 2.815A.5.5 0 0 1 2 15.5zm2-1a1 1 0 0 0-1 1v10.566l3.723-2.482a.5.5 0 0 1 .554 0L11 14.566V4a1 1 0 0 0-1-1z"/>
                 <path d="M4.268 1H12a1 1 0 0 1 1 1v11.768l.223.148A.5.5 0 0 0 14 13.5V2a2 2 0 0 0-2-2H6a2 2 0 0 0-1.732 1"/>
             </svg>
-            </Link>
+            </Link> */}
           </Card.Text>
         </Card.Body>
         </Card>

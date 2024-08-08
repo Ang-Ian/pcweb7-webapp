@@ -37,21 +37,6 @@ const ArticleDetails = () => {
         }
     }
 
-    async function deletePost(id) {
-        const articleDocument = await getDoc(doc(db, "article", id));
-        const article = articleDocument.data();
-        const desertRef = ref(storage, `thumbnails/${article.imageName}`);
-        deleteObject(desertRef).then(() => {
-            console.log("deleted from firebase storage")
-        }).catch((error) => {
-            console.log("OH NO")
-            console.error(error.message)
-        });
-
-        await deleteDoc(doc(db, "articles", id));
-        navigate("/");
-    }
-
     async function getArticle(id) {
         const articleDocument = await getDoc(doc(db, "articles", id));
         const article = articleDocument.data();

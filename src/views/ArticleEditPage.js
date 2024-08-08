@@ -5,20 +5,24 @@ import { Navbar, Nav, Container, Button, Form, Image, Dropdown } from 'react-boo
 import { signOut, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db, storage } from "../firebase";
-import { doc, addDoc, collection, setDoc, getDoc } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { useNavigate } from 'react-router-dom';
+import { doc, addDoc, collection, setDoc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytes, deleteObject } from "firebase/storage";
+import { useNavigate, useParams } from 'react-router-dom';
 import './HomePage.css';
+import ArticleDetails from './ArticleDetailsPage';
 
 const EditArticle = () => {
     const [user, loading] = useAuthState(auth);
     const [error, setError] = useState("");
-    const [title, setTitle] = useState("");
+    const [title, setTitle] = useState(""); //
     const [username, setUsername] = useState("");
     const [image, setImage] = useState("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png")
-    const [thumbnail, setThumbnail] = useState(null);
-    const [body, setBody] = useState("");
+    const [previewImage, setPreviewImage] = useState("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png")
+    const [thumbnail, setThumbnail] = useState(null); //
+    const [body, setBody] = useState(""); //
     const [imageUrl, setImageUrl] = useState("");
+    const params = useParams();
+    const id = params.id;
     const navigate = useNavigate();
 
     async function setProfileIcons() {
@@ -34,16 +38,38 @@ const EditArticle = () => {
         }
     }
 
-    async function addArticleDetails(id) {
+    async function deletePost(id) {
+        {/* something suspicious is brewing in the code below. i don't knwo why but the compiler is crying about imageName being unfound :() */}
+        // const articleDocument = await getDoc(doc(db, "article", id));
+        // const article = articleDocument.data();
+        // console.log(article);
+        // const desertRef = ref(storage, `thumbnails/${article.imageName}`);
+        // deleteObject(desertRef).then(() => {
+        //     console.log("deleted from firebase storage")
+        // }).catch((error) => {
+        //     console.log("OH NO")
+        //     console.error(error.message)
+        // });
+        console.log("deleting...")
+        await deleteDoc(doc(db, "articles", id));
+        console.log("deleted!")
+        navigate("/");
+    }
+
+    async function updateArticle() {
         const thumbnailReference = ref(storage, `thumbnails/${thumbnail.name}`);
         const response = await uploadBytes(thumbnailReference, thumbnail);
-        const thumbnailUrl = await getDownloadURL(response.ref);
-        await addDoc(collection(db, "articles"), {
-            title,
-            body,
-            thumbnail: thumbnailUrl,
-            uid: user.uid
-        });
+        const imageUrl = await getDownloadURL(response.ref);
+        await updateDoc(doc(db, "articles", id), {body, thumbnail: imageUrl, title})
+    }
+
+    async function getArticle(id) {
+        const articleDocument = await getDoc(doc(db, "articles", id));
+        const article = articleDocument.data();
+        setTitle(article.title);
+        // setThumbnail(article.thumbnail);
+        setBody(article.body);
+        setPreviewImage(article.thumbnail);
     }
 
     useEffect(() => {
@@ -55,7 +81,8 @@ const EditArticle = () => {
             .catch((error) => {
                 console.error("Error setting persistence:", error);
             });
-    }, []);
+            getArticle(id);
+    }, [id]);
 
     useEffect(() => {
         if (loading) return;
@@ -132,7 +159,7 @@ const EditArticle = () => {
                 </Container>
             </Navbar>
             <Container className="main-content">
-                <h1>Add New Article</h1>
+                <h1>Edit Article</h1>
                 <Form>
                     <Form.Group className="mb-3" controlId="formArticleTitle">
                         <Form.Label>Title</Form.Label>
@@ -143,11 +170,24 @@ const EditArticle = () => {
                             onChange={(e) => {setTitle(e.target.value)}}
                         />
                     </Form.Group>
+                    <Image
+                    src={previewImage}
+                    style={{
+                        objectFit: "cover",
+                        width: "10rem",
+                        height: "10rem"
+                    }}
+                    />
                     <Form.Group className="mb-3" controlId="formThumbnail">
                         <Form.Label>Thumbnail</Form.Label>
                         <Form.Control
                             type="file"
-                            onChange={(e) => {setThumbnail(e.target.files[0])}}
+                            onChange={(e) => {
+                                const imageFile = e.target.files[0];
+                                const previewImage = URL.createObjectURL(imageFile);
+                                setThumbnail(imageFile);
+                                setPreviewImage(previewImage);
+                            }}
                         />
                         {imageUrl && (
                             <Image src={imageUrl} thumbnail style={{ marginTop: '10px', maxWidth: '200px' }} />
@@ -163,12 +203,12 @@ const EditArticle = () => {
                             onChange={(e) => {setBody(e.target.value)}}
                         />
                     </Form.Group>
-                    <Button variant="primary" type="submit" onClick={(e) => {
+                    <Button variant="primary mx-3" type="submit" onClick={(e) => {
                         setError("");
                         const canSubmit = title && thumbnail && body;
                         if (canSubmit) {
                             try {
-                                addArticleDetails(user.uid);
+                                updateArticle();
                                 navigate("/");
                             } catch (error) {
                                 setError(error.message);
@@ -176,6 +216,12 @@ const EditArticle = () => {
                         }
                     }}>
                         Submit
+                    </Button>
+                    <Button variant="danger mx-3" type="button"
+                        onClick={() => deletePost(id)}
+                        style={{ cursor: "pointer" }}    
+                    >
+                        Delete
                     </Button>
                 </Form>
             </Container>

@@ -3,15 +3,18 @@ import { Navbar, Nav, Container, Button, Card, Image, Dropdown, Row } from 'reac
 import { signOut, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "../firebase";
-import { doc, getDoc, getDocs, collection, addDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection } from "firebase/firestore";
 import './HomePage.css';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
-const HomePage = () => {
+const ProfilePage = () => {
     const [user, loading] = useAuthState(auth);
     const [image, setImage] = useState("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png");
     const [username, setUsername] = useState("User");
+    const [authorusername, setAuthorUsername] = useState("");
     const [articles, setArticles] = useState([]);
+    const params = useParams();
+    const id = params.id;
     const navigate = useNavigate();
     
     async function setProfileIcons() {
@@ -27,17 +30,26 @@ const HomePage = () => {
         }
     }
 
-    async function getAllArticles() {
+    async function getAuthorsArticles() {
         const query = await getDocs(collection(db, "articles"));
+        console.log(query);
+        console.log("HALLOO", query.docs[0].data());
         const articles = query.docs.map((doc) => {
-          return { id: doc.id, ...doc.data() };
-        });
-        console.log("boomz", articles);
-        setArticles(articles);
+            return { id: doc.id, ...doc.data() };
+        })
+        const authorsArticles = articles.filter((doc) => (doc.uid === id));
+        console.log("boomz", authorsArticles);
+        setArticles(authorsArticles);
     }
 
     const ArticleRow = () => {
     return articles.map((article, index) => <ArticleCard key={index} article={article} />);
+    };
+
+    async function getAuthorProfile() {
+        const authorDocument = await getDoc(doc(db, "users", id));
+        const author = authorDocument.data();
+        setAuthorUsername(author.username);
     };
     
     useEffect(() => {
@@ -49,7 +61,8 @@ const HomePage = () => {
             .catch((error) => {
                 console.error("Error setting persistence:", error);
             });
-        getAllArticles()
+        getAuthorsArticles();
+        getAuthorProfile();
     }, []);
 
     useEffect(() => {
@@ -115,11 +128,6 @@ const HomePage = () => {
                                         >
                                             Log Out
                                         </Dropdown.Item>
-                                        <Dropdown.Item
-                                            onClick={() => navigate(`bookmarks/${user.uid}`)}
-                                        >
-                                            Bookmarks
-                                        </Dropdown.Item>
                                     </Dropdown.Menu>
                                 </Dropdown>
                             </>
@@ -131,7 +139,7 @@ const HomePage = () => {
                 </Container>
             </Navbar>
             <Container className="main-content">
-                <h1>Home Page</h1>
+                <h1>{authorusername}'s articles</h1>
                 <Row style={{alignItems: "center"}}>
                     <ArticleRow />
                 </Row>
@@ -140,14 +148,12 @@ const HomePage = () => {
     );
 };
 
-export default HomePage;
+export default ProfilePage;
 
 
 function ArticleCard({ article }) {
     const [authorusername, setAuthorUsername] = useState("");
     const [authorpfp, setauthorPfP] = useState(null);
-    const [user, loading] = useAuthState(auth);
-    const navigate = useNavigate();
 
     const { thumbnail, id } = article;
     // console.log("pdff", article.thumbnail, "blehg", article.uid)
@@ -160,14 +166,8 @@ function ArticleCard({ article }) {
         setauthorPfP(author.image);
     };
     getAuthorProfile();
-
-    async function addToBookmarks(articleId) {
-        const userid = user.uid;
-        await addDoc(collection(db, "bookmarks"), { articleid: articleId, userid: userid})
-    }
-
     return (
-      <Link
+        <Link
         to={`article/${id}`}
         style={{
           width: "18rem",
@@ -183,24 +183,13 @@ function ArticleCard({ article }) {
           <Card.Text>
           <p style={{fontSize:"15px",textAlign:"left"}}>
                 Written by: 
-                <Link
-                    to={`user/${article.uid}`}
-                    style={{ cursor: "pointer", textDecoration:"None" }}
-                >
                     <Image
                     src={authorpfp}
                     roundedCircle
                     className="profile-pic" 
                     style={{ width: '40px', height: '40px' }}
                                 /> {authorusername}
-                </Link>
                 </p>
-            <Link onClick={() => addToBookmarks(id)}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bookmarks" viewBox="0 0 16 16">
-                <path d="M2 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v11.5a.5.5 0 0 1-.777.416L7 13.101l-4.223 2.815A.5.5 0 0 1 2 15.5zm2-1a1 1 0 0 0-1 1v10.566l3.723-2.482a.5.5 0 0 1 .554 0L11 14.566V4a1 1 0 0 0-1-1z"/>
-                <path d="M4.268 1H12a1 1 0 0 1 1 1v11.768l.223.148A.5.5 0 0 0 14 13.5V2a2 2 0 0 0-2-2H6a2 2 0 0 0-1.732 1"/>
-            </svg>
-            </Link>
           </Card.Text>
         </Card.Body>
         </Card>
