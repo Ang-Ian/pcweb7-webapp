@@ -154,6 +154,7 @@ export default ProfilePage;
 function ArticleCard({ article }) {
     const [authorusername, setAuthorUsername] = useState("");
     const [authorpfp, setauthorPfP] = useState(null);
+    const navigate = useNavigate();
 
     const { thumbnail, id } = article;
     // console.log("pdff", article.thumbnail, "blehg", article.uid)
@@ -168,7 +169,7 @@ function ArticleCard({ article }) {
     getAuthorProfile();
     return (
         <Link
-        to={`article/${id}`}
+        to={{pathname: `/article/${id}`}}
         style={{
           width: "18rem",
           marginLeft: "1rem",
